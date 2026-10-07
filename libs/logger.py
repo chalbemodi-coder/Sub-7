@@ -56,42 +56,57 @@ class Reporter:
 
     async def alert_new_file_founded(self):
         await self.awake()
-        msg = await self.client.send_message(
-            Var.MAIN_CHANNEL if Var.LOG_ON_MAIN else Var.LOG_CHANNEL,
-            f"**New Anime Released**\n\n **File Name:** ```{self.file_name}```\n\n**STATUS:** `Downloading...`",
+        log_channel = (
+            Var.MAIN_CHANNEL
+            if Var.LOG_ON_MAIN and Var.MAIN_CHANNEL
+            else Var.LOG_CHANNEL
         )
-        self.msg = msg
+        if log_channel:
+            self.msg = await self.client.send_message(
+                log_channel,
+                f"**New Anime Released**\n\n **File Name:** ```{self.file_name}```\n\n**STATUS:** `Downloading...`",
+            )
+        else:
+            LOGS.info("New anime found: %s", self.file_name)
 
     async def started_compressing(self):
-        self.msg = await self.msg.edit(
-            f"**Successfully Downloaded The Anime**\n\n **File Name:** ```{self.file_name}```\n\n**STATUS:** `Encoding...`",
-        )
+        if self.msg:
+            self.msg = await self.msg.edit(
+                f"**Successfully Downloaded The Anime**\n\n **File Name:** ```{self.file_name}```\n\n**STATUS:** `Encoding...`",
+            )
         return self.msg
 
     async def started_renaming(self):
-        self.msg = await self.msg.edit(
-            f"**Successfully Downloaded The Anime**\n\n **File Name:** ```{self.file_name}```\n\n**STATUS:** `Renaming...`",
-        )
+        if self.msg:
+            self.msg = await self.msg.edit(
+                f"**Successfully Downloaded The Anime**\n\n **File Name:** ```{self.file_name}```\n\n**STATUS:** `Renaming...`",
+            )
 
     async def started_uploading(self):
-        self.msg = await self.msg.edit(
-            f"**Successfully Encoded The Anime**\n\n **File Name:** ```{self.file_name}```\n\n**STATUS:** `Uploading...`"
-        )
+        if self.msg:
+            self.msg = await self.msg.edit(
+                f"**Successfully Encoded The Anime**\n\n **File Name:** ```{self.file_name}```\n\n**STATUS:** `Uploading...`"
+            )
 
     async def started_gen_ss(self):
-        self.msg = await self.msg.edit(
-            f"**Successfully Uploaded The Anime**\n\n **File Name:** ```{self.file_name}```\n\n**STATUS:** `Generating Sample And Screen Shot...`"
-        )
+        if self.msg:
+            self.msg = await self.msg.edit(
+                f"**Successfully Uploaded The Anime**\n\n **File Name:** ```{self.file_name}```\n\n**STATUS:** `Generating Sample And Screen Shot...`"
+            )
 
     async def all_done(self):
-        try:
-            self.msg = await self.msg.edit(
-                f"**Successfully Completed All Task Related To The Anime**\n\n **File Name:** ```{self.file_name}```\n\n**STATUS:** `DONE`"
-            )
-        except BaseException:
-            pass  # ValueError Sometimes From telethon
-        if Var.LOG_ON_MAIN:
-            await self.msg.delete()
+        if self.msg:
+            try:
+                self.msg = await self.msg.edit(
+                    f"**Successfully Completed All Task Related To The Anime**\n\n **File Name:** ```{self.file_name}```\n\n**STATUS:** `DONE`"
+                )
+            except BaseException:
+                pass  # ValueError Sometimes From telethon
+            try:
+                await self.msg.delete()
+            except BaseException:
+                pass
+            self.msg = None
 
     async def awake(self):  # in case
         if not self.client.is_connected():
@@ -100,9 +115,17 @@ class Reporter:
     async def report_error(self, msg, log=False):
         txt = f"[ERROR] {msg}"
         if log:
-            LOGS.error(txt[0])
+            LOGS.error(txt)
         try:
-            await self.client.send_message(Var.LOG_CHANNEL, f"```{txt[:4096]}```")
+            log_channel = (
+                Var.MAIN_CHANNEL
+                if Var.LOG_ON_MAIN and Var.MAIN_CHANNEL
+                else Var.LOG_CHANNEL
+            )
+            if log_channel:
+                await self.client.send_message(
+                    log_channel, f"```{txt[:4096]}```"
+                )
         except FloodWaitError as fwerr:
             await self.client.disconnect()
             LOGS.info("Sleeping Becoz Of Floodwait...")

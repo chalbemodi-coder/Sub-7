@@ -243,6 +243,7 @@ class Tools:
             cmd, stdout=asyncio.subprocess.PIPE, stderr=asyncio.subprocess.PIPE
         )
         d_time = time.time()
+        _new_log_msg = log_msg
         while process.returncode != 0:
             await asyncio.sleep(5)
 
@@ -278,7 +279,7 @@ class Tools:
                 per = elapse * 100 / int(total_frames)
                 time_diff = time.time() - int(d_time)
                 speed = round(elapse / time_diff, 2)
-            if int(speed) != 0:
+            if int(speed) != 0 and log_msg:
                 some_eta = ((int(total_frames) - elapse) / speed) * 1000
                 text = f"**Successfully Downloaded The Anime**\n\n **File Name:** ```{
                     dl.split('/')[

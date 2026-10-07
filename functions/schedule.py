@@ -17,6 +17,7 @@
 # credit to t.me/kAiF_00z (github.com/kaif-00z)
 
 
+import asyncio
 import json
 import os
 import sys
@@ -54,8 +55,24 @@ class ScheduleTasks:
             for i in xxx:
                 info = AnimeInfo(i["title"])
                 text += f'`[{i["time"]}]` -  [{(await info.get_english())}](https://subsplease.org/shows/{i["page"]})\n'
-            mssg = await self.bot.send_message(Var.MAIN_CHANNEL, text)
-            await mssg.pin(notify=True)
+            channels = Var.MAIN_CHANNELS or (
+                [Var.MAIN_CHANNEL] if Var.MAIN_CHANNEL else []
+            )
+            if not channels:
+                LOGS.warning("Skipping schedule post; no main channel is configured.")
+                return
+            results = await asyncio.gather(
+                *(self.bot.send_message(channel, text) for channel in channels),
+                return_exceptions=True,
+            )
+            for result in results:
+                if isinstance(result, BaseException):
+                    LOGS.error(
+                        "Could not post the schedule to one channel (%s).",
+                        type(result).__name__,
+                    )
+                else:
+                    await result.pin(notify=True)
         except Exception as error:
             LOGS.error(str(error))
 

@@ -64,25 +64,17 @@
 
 - `BOT_TOKEN` - Get This From @Botfather In Telegram.
 
+- `API_ID` and `API_HASH` - Get these from [my.telegram.org](https://my.telegram.org); required for user-session login.
+
 - `MONGO_SRV` - Get This From mongodb.com .
 
-- `MAIN_CHANNEL` - ID of Channel Where Anime Will Upload.
+- `OWNER` - Numeric Telegram user ID allowed to manage channels and use `/login`.
 
-- `CLOUD_CHANNEL` - ID of Channel Where Samples And Screenshots Of Anime Will Be Uploaded.
-
-- `LOG_CHANNEL` - ID of Channel Where Status Of Proccesses Will Be Shown.
-
-- `OWNER` - ID of Owner.
+- `SESSION_ENCRYPTION_KEY` - Secret Fernet key used to encrypt the saved user session in MongoDB.
 
 ### OPTIONAL VARIABLES
 
-- `SESSION` - Telethon Session String Of Your Telegram Account.
-
-- `BACKUP_CHANNEL` - ID of Channel Where Anime Will Be Saved As BackUP if You Are Using Button Upload Option Then Make Sure To SET Backup Channel.
-
-- `FORCESUB_CHANNEL` - ID of Channel Where You Want The User To Join (Make Sure You Promoted The Bot in that channel).
-
-- `FORCESUB_CHANNEL_LINK` - Link of Channel Via User Join The `FORCESUB_CHANNEL`.
+- `SESSION` - Legacy plaintext Telethon session; leave blank to use encrypted `/login` storage.
 
 - `THUMBNAIL` - JPG/PNG Link of Thumbnail FIle.
 
@@ -94,19 +86,37 @@
 
 - `RESTART_EVERDAY` - `True/False` It Will Restart The Bot Everyday At 00:30 **IST**, default is `True`.
 
-- `DELETE_FILES_FROM_PMS` - `True/False` It Will delete the file from pm of user after 10mins if button upload is enabled. default is `True`.
-
 - `CRF` - Less CRF == High Quality, More Size , More CRF == Low Quality, Less Size, CRF Range = 20-51.
+
+### Owner-only Telegram User Login
+
+- Set `OWNER` to your own numeric Telegram user ID. The sample value `0` disables owner-only login until you replace it.
+- Generate a Fernet key with `python -c "from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())"` and store it as the secret environment variable `SESSION_ENCRYPTION_KEY`. Never commit or share this key.
+- Leave `SESSION` empty. Start the bot, then send `/login` to it from the owner's private chat. Only the exact `OWNER` ID is allowed; up to five incorrect OTP attempts are accepted before the flow stops and the owner must restart it.
+- `auto_env_gen.py` may still use a temporary local login once to create the BotFather bot/channels, but it no longer prints or stores that session. Normal runtime user-session login is through `/login`.
+- The session is encrypted before it is stored in MongoDB, so it survives normal redeploys. Preserve the same encryption key and protect both the key and database backups; without that key the stored session cannot be decrypted.
+- Login codes (and, if requested by Telegram, the 2-Step Verification password) are entered in the bot's private chat and deleted on a best-effort basis. **Bot chats are not end-to-end encrypted**, so Telegram may process or retain messages; do not use this flow if that exposure is unacceptable. Secrets are not written to application logs.
+
+### Owner-only Channel Setup
+
+- Channel IDs are stored in MongoDB; you do not need `MAIN_CHANNEL`, `LOG_CHANNEL`, `BACKUP_CHANNEL`, `CLOUD_CHANNEL`, or force-sub channel environment variables.
+- After startup, send `/channels` to see current settings, then `/setchannel main <channel_id>`, `/setchannel log <channel_id>`, `/setchannel backup <channel_id>`, or `/setchannel cloud <channel_id>` in the owner's private chat. The bot must be an administrator with the required posting rights in each channel.
+- Add at most two main channels; anime posts, posters, and daily schedules are mirrored to both. Other roles take one channel each. Remove a main channel with `/unsetchannel main <channel_id>` (or clear both with `/unsetchannel main`); remove another role with `/unsetchannel log|backup|cloud`.
+- Add up to six force-sub channels, choosing a mode separately for each one: `/setchannel forcesub <channel_id> temp` gives each user a **unique, single-use invite link that expires in 10 minutes**; refresh reuses that user's still-valid link. `/setchannel forcesub <channel_id> fixed <invite_link>` uses the invite link you provide. Repeating `/setchannel` for the same ID changes that channel's mode.
+- Temporary links require the bot to be an administrator with permission to invite users in each selected channel. Remove one with `/unsetchannel forcesub <channel_id>` or remove all force-sub channels with `/unsetchannel forcesub`.
+- Switching a channel from fixed to temporary mode does not revoke the old fixed invite link; revoke that old link in Telegram if it should no longer work.
+- A video delivered to a user's private chat through its deep link is automatically deleted from that bot chat after 10 minutes. Clicking the same link again requests a fresh copy from the backup channel. This does not delete the backup source or copies the user forwarded elsewhere.
+- Public anime posts are not automatically deleted. A single temporary progress message is updated in place and removed when processing finishes; error logs remain.
 
 ## Deployment In VPS
 
-- `git clone https://github.com/chalbemodi-coder/Sub-7.git`
+- After PR #2 is merged, deploy `main` from `https://github.com/chalbemodi-coder/Sub-7.git`. For pre-merge testing only, use branch `security/owner-only-telegram-login`.
 
-- `nano .env` configure env as per [this](https://github.com/chalbemodi-coder/Sub-7/blob/main/.sample.env) or  using [this](https://github.com/chalbemodi-coder/Sub-7/blob/main/auto_env_gen.py).
+- Configure the environment variables from `.sample.env` in the hosting provider's secret/environment-variable settings. For a VPS, store them in a private `.env` file; do not commit or send that file in chat. `.dockerignore` excludes `.env` and session files from the image build context.
 
-- `sudo docker build . -t ongoing` (make sure to install docker first using `sudo apt install docker.io`)
+- Build the image with `sudo docker build . -t ongoing` (make sure to install Docker first using `sudo apt install docker.io`).
 
-- `sudo docker run ongoing`
+- Run on a VPS with `sudo docker run -d --name ongoing --restart unless-stopped --env-file .env ongoing`. On managed hosting, set the same variables in its dashboard; the Dockerfile entrypoint runs `bash run.sh` (`python3 bot.py`).
 
 ## Commands
 

@@ -19,6 +19,7 @@
 
 import asyncio
 import sys
+from datetime import datetime, timedelta, timezone
 from logging import Logger
 from traceback import format_exc
 
@@ -78,9 +79,11 @@ class Bot(TelegramClient):
             in_memory=True,
         )
         self.user_client = None
-        if Var.SESSION:
+        session_string = Var.SESSION
+        if session_string:
+            Var.SESSION = session_string
             self.user_client = TelegramClient(
-                StringSession(Var.SESSION), kwargs["api_id"], kwargs["api_hash"]
+                StringSession(session_string), kwargs["api_id"], kwargs["api_hash"]
             )
         self.run_in_loop(self.start_client(bot_token=bot_token or Var.BOT_TOKEN))
 
@@ -90,11 +93,29 @@ class Bot(TelegramClient):
     async def start_client(self, **kwargs):
         """function to start client"""
         if self._log_at:
-            self.logger.info("Trying to login.")
+            self.logger.info("Trying To login.")
         try:
             await self.start(**kwargs)
             if self.user_client:
-                await self.user_client.start()
+                try:
+                    await self.user_client.connect()
+                    authorized = await self.user_client.is_user_authorized()
+                except Exception as error:
+                    self.logger.warning(
+                        "Could not load configured user session (%s).",
+                        type(error).__name__,
+                    )
+                    authorized = False
+                if not authorized:
+                    self.logger.warning(
+                        "Telegram user session is not authorized; use /login in the owner's private chat."
+                    )
+                    try:
+                        await self.user_client.disconnect()
+                    except Exception:
+                        pass
+                    self.user_client = None
+                    Var.SESSION = None
             await self.pyro_client.start()
         except ApiIdInvalidError:
             self.logger.critical("API ID and API_HASH combination does not match!")
@@ -119,6 +140,29 @@ class Bot(TelegramClient):
                 self.logger.info(f"Logged in as @{user_me.username}")
         self._bot = await self.is_bot()
 
+    async def attach_user_session(self, session_string):
+        """Attach an already-authenticated StringSession without interactive prompts."""
+        user_client = TelegramClient(
+            StringSession(session_string), Var.API_ID, Var.API_HASH
+        )
+        try:
+            await user_client.connect()
+            if not await user_client.is_user_authorized():
+                await user_client.disconnect()
+                return False
+        except Exception as error:
+            self.logger.error(
+                "Could not attach stored Telegram session (%s).", type(error).__name__
+            )
+            try:
+                await user_client.disconnect()
+            except Exception:
+                pass
+            return False
+        self.user_client = user_client
+        Var.SESSION = session_string
+        return True
+
     async def upload_anime(self, file, caption, thumb=None, is_button=False):
         if not self.pyro_client.is_connected:
             try:
@@ -129,22 +173,61 @@ class Bot(TelegramClient):
                 except Exception:
                     pass
                 await self.pyro_client.start()
-        post = await self.pyro_client.send_document(
-            Var.BACKUP_CHANNEL if is_button else Var.MAIN_CHANNEL,
-            file,
-            caption=f"`{caption}`",
-            force_document=True,
-            thumb=thumb or "thumb.jpg",
+        if is_button:
+            if not Var.BACKUP_CHANNEL:
+                raise RuntimeError("Configure a backup channel before enabling button upload.")
+            targets = [Var.BACKUP_CHANNEL]
+        else:
+            targets = list(
+                Var.MAIN_CHANNELS or ([Var.MAIN_CHANNEL] if Var.MAIN_CHANNEL else [])
+            )
+        if not targets:
+            raise RuntimeError("Configure a main channel with /setchannel before uploading.")
+        results = await asyncio.gather(
+            *(
+                self.pyro_client.send_document(
+                    channel_id,
+                    file,
+                    caption=f"`{caption}`",
+                    force_document=True,
+                    thumb=thumb or "thumb.jpg",
+                )
+                for channel_id in targets
+            ),
+            return_exceptions=True,
         )
-        return post
+        posts = [item for item in results if not isinstance(item, BaseException)]
+        for result in results:
+            if isinstance(result, BaseException):
+                self.logger.error("Could not post to one configured channel (%s).", type(result).__name__)
+        if not posts:
+            error = next((item for item in results if isinstance(item, BaseException)), None)
+            raise RuntimeError("Could not upload to any configured channel.") from error
+        return posts[0] if len(posts) == 1 else posts
 
     async def upload_poster(self, file, caption, channel_id=None):
-        post = await self.send_file(
-            channel_id if channel_id else Var.MAIN_CHANNEL,
-            file=file,
-            caption=caption or "",
+        targets = (
+            [channel_id]
+            if channel_id
+            else list(Var.MAIN_CHANNELS or ([Var.MAIN_CHANNEL] if Var.MAIN_CHANNEL else []))
         )
-        return post
+        if not targets:
+            raise RuntimeError("Configure a main channel with /setchannel before posting.")
+        results = await asyncio.gather(
+            *(
+                self.send_file(target, file=file, caption=caption or "")
+                for target in targets
+            ),
+            return_exceptions=True,
+        )
+        posts = [item for item in results if not isinstance(item, BaseException)]
+        for result in results:
+            if isinstance(result, BaseException):
+                self.logger.error("Could not post a poster to one channel (%s).", type(result).__name__)
+        if not posts:
+            error = next((item for item in results if isinstance(item, BaseException)), None)
+            raise RuntimeError("Could not post the poster to any configured channel.") from error
+        return posts[0] if len(posts) == 1 else posts
 
     async def is_joined(self, channel_id, user_id):
         try:
@@ -202,15 +285,25 @@ class Bot(TelegramClient):
         except BaseException:
             LOGS.error(format_exc())
 
+    async def generate_temporary_invite_link(self, channel_id, minutes=10):
+        """Create a unique one-use invite link through Telegram's Bot API."""
+        expires_at = datetime.now(timezone.utc) + timedelta(minutes=minutes)
+        result = await self.pyro_client.create_chat_invite_link(
+            chat_id=channel_id,
+            expire_date=expires_at,
+            member_limit=1,
+        )
+        return result.invite_link, expires_at.timestamp()
+
     async def delete_after(self, messages, seconds: int = 600):  # 10 min
         await asyncio.sleep(seconds)
-        # maybe floodwait?
-        await asyncio.gather(*[msg.delete() for msg in messages])
-        # for msg in messages:
-        #     try:
-        #         await msg.delete()
-        #     except Exception:
-        #         pass
+        for message in messages:
+            try:
+                await message.delete()
+            except Exception as error:
+                self.logger.warning(
+                    "Timed message cleanup failed (%s).", type(error).__name__
+                )
 
     def run_in_loop(self, function):
         return self.loop.run_until_complete(function)
