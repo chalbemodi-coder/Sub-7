@@ -86,8 +86,6 @@
 
 - `RESTART_EVERDAY` - `True/False` It Will Restart The Bot Everyday At 00:30 **IST**, default is `True`.
 
-- `DELETE_FILES_FROM_PMS` - `True/False` It Will delete the file from pm of user after 10mins if button upload is enabled. default is `True`.
-
 - `CRF` - Less CRF == High Quality, More Size , More CRF == Low Quality, Less Size, CRF Range = 20-51.
 
 ### Owner-only Telegram User Login
@@ -107,6 +105,7 @@
 - Add up to six force-sub channels, choosing a mode separately for each one: `/setchannel forcesub <channel_id> temp` gives each user a **unique, single-use invite link that expires in 10 minutes**; refresh reuses that user's still-valid link. `/setchannel forcesub <channel_id> fixed <invite_link>` uses the invite link you provide. Repeating `/setchannel` for the same ID changes that channel's mode.
 - Temporary links require the bot to be an administrator with permission to invite users in each selected channel. Remove one with `/unsetchannel forcesub <channel_id>` or remove all force-sub channels with `/unsetchannel forcesub`.
 - Switching a channel from fixed to temporary mode does not revoke the old fixed invite link; revoke that old link in Telegram if it should no longer work.
+- A video delivered to a user's private chat through its deep link is automatically deleted from that bot chat after 10 minutes. Clicking the same link again requests a fresh copy from the backup channel. This does not delete the backup source or copies the user forwarded elsewhere.
 - Public anime posts are not automatically deleted. A single temporary progress message is updated in place and removed when processing finishes; error logs remain.
 
 ## Deployment In VPS

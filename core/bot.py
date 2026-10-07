@@ -297,13 +297,13 @@ class Bot(TelegramClient):
 
     async def delete_after(self, messages, seconds: int = 600):  # 10 min
         await asyncio.sleep(seconds)
-        # maybe floodwait?
-        await asyncio.gather(*[msg.delete() for msg in messages])
-        # for msg in messages:
-        #     try:
-        #         await msg.delete()
-        #     except Exception:
-        #         pass
+        for message in messages:
+            try:
+                await message.delete()
+            except Exception as error:
+                self.logger.warning(
+                    "Timed message cleanup failed (%s).", type(error).__name__
+                )
 
     def run_in_loop(self, function):
         return self.loop.run_until_complete(function)

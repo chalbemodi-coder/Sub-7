@@ -138,11 +138,10 @@ async def _start(event):
         if msg_id.isdigit():
             msg = await bot.get_messages(Var.BACKUP_CHANNEL, ids=int(msg_id))
             sent_msg = await event.reply(msg)
-            if Var.DELETE_FILES_FROM_PMS:
-                notice = await sent_msg.reply(
-                    "__This file will be automatically deleted after 10 minutes.\nPlease save or forward it immediately.__"
-                )
-                asyncio.create_task(bot.delete_after([notice, sent_msg]))
+            notice = await sent_msg.reply(
+                "__This file will be automatically deleted after 10 minutes.\nPlease save or forward it immediately.__"
+            )
+            asyncio.create_task(bot.delete_after([notice, sent_msg], seconds=600))
         else:
             items = await dB.get_store_items(msg_id)
             if items:
