@@ -28,7 +28,7 @@
         },
 
         "SESSION_ENCRYPTION_KEY": {
-            "description": "Fernet key for encrypting the Telegram user session at rest.",
+            "description": "Stable Fernet key for encrypted Telegram session storage on hosts without a persistent key volume; Docker Compose can auto-create one in its session-state volume.",
             "value": ""
         },
 

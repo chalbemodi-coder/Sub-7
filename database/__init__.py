@@ -24,7 +24,7 @@ from traceback import format_exc
 from motor.motor_asyncio import AsyncIOMotorClient
 
 from functions.config import Var
-from functions.session_store import decrypt_session, encrypt_session
+from functions.session_store import decrypt_session, encrypt_session, get_session_key
 from libs.logger import LOGS
 
 
@@ -155,10 +155,12 @@ class DataBase:
         data = await self.opts_db.find_one({"_id": self.USER_SESSION_ID})
         if not data or not data.get("token"):
             return None
-        return decrypt_session(data["token"], Var.SESSION_ENCRYPTION_KEY)
+        key = get_session_key(Var.SESSION_ENCRYPTION_KEY, create=False)
+        return decrypt_session(data["token"], key)
 
     async def store_user_session(self, session_string):
-        token = encrypt_session(session_string, Var.SESSION_ENCRYPTION_KEY)
+        key = get_session_key(Var.SESSION_ENCRYPTION_KEY, create=True)
+        token = encrypt_session(session_string, key)
         await self.opts_db.update_one(
             {"_id": self.USER_SESSION_ID},
             {"$set": {"token": token}},

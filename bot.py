@@ -35,7 +35,7 @@ from core.executors import Executors
 from database import DataBase
 from functions.info import AnimeInfo
 from functions.schedule import ScheduleTasks, Var
-from functions.session_store import SessionStoreError, validate_key
+from functions.session_store import SessionStoreError, get_session_key
 from functions.tools import Tools, asyncio
 from functions.utils import AdminUtils
 from libs.ariawarp import Torrent
@@ -334,10 +334,12 @@ async def _owner_login(event):
             pass
 
     try:
-        validate_key(Var.SESSION_ENCRYPTION_KEY)
+        Var.SESSION_ENCRYPTION_KEY = get_session_key(
+            Var.SESSION_ENCRYPTION_KEY, create=True
+        )
     except SessionStoreError:
         return await event.reply(
-            "Login is not configured. Set SESSION_ENCRYPTION_KEY in the bot environment first."
+            "Session storage is not ready. Ensure the persistent Docker .state volume is mounted and writable, or set SESSION_ENCRYPTION_KEY."
         )
 
     await _delete_login_input(event.message)
@@ -346,6 +348,21 @@ async def _owner_login(event):
     try:
         await login_client.connect()
         async with bot.conversation(event.chat_id, timeout=180, exclusive=True) as conv:
+            await conv.send_message(
+                "Security notice: Telegram bot chats are not end-to-end encrypted. "
+                "Telegram and this bot process these login details; phone, OTP, and optional 2-step password messages "
+                "are deleted from chat on a best-effort basis only. Send `continue` to proceed or `/cancel` to stop."
+            )
+            consent_message = await conv.get_response()
+            consent = (consent_message.raw_text or "").strip().lower()
+            await _delete_login_input(consent_message)
+            if consent == "/cancel":
+                return await conv.send_message("Login cancelled; no session was saved.")
+            if consent != "continue":
+                return await conv.send_message(
+                    "Login cancelled. Run /login again and send `continue` if you want to proceed."
+                )
+
             await conv.send_message(
                 "Send your phone number in international format (for example, +1234567890).\n"
                 "Your message will be deleted on a best-effort basis. Send /cancel to stop."
@@ -461,43 +478,68 @@ async def _owner_login(event):
                 pass
 
 
+async def _require_owner_callback(event):
+    if not Var.OWNER or event.sender_id != Var.OWNER:
+        await event.answer(
+            "This admin action is only available to the configured owner.", alert=True
+        )
+        return False
+    return True
+
+
 @bot.on(events.callbackquery.CallbackQuery(data="slog"))
 async def _(e):
+    if not await _require_owner_callback(e):
+        return
     await admin._logs(e)
 
 
 @bot.on(events.callbackquery.CallbackQuery(data="sret"))
 async def _(e):
+    if not await _require_owner_callback(e):
+        return
     await admin._restart(e, schedule)
 
 
 @bot.on(events.callbackquery.CallbackQuery(data="entg"))
 async def _(e):
+    if not await _require_owner_callback(e):
+        return
     await admin._encode_t(e)
 
 
 @bot.on(events.callbackquery.CallbackQuery(data="sstg"))
 async def _(e):
+    if not await _require_owner_callback(e):
+        return
     await admin._ss_t(e)
 
 
 @bot.on(events.callbackquery.CallbackQuery(data="butg"))
 async def _(e):
+    if not await _require_owner_callback(e):
+        return
     await admin._btn_t(e)
 
 
 @bot.on(events.callbackquery.CallbackQuery(data="scul"))
 async def _(e):
+    if not await _require_owner_callback(e):
+        return
     await admin._sep_c_t(e)
 
 
 @bot.on(events.callbackquery.CallbackQuery(data="cast"))
 async def _(e):
+    if not await _require_owner_callback(e):
+        return
     await admin.broadcast_bt(e)
 
 
 @bot.on(events.callbackquery.CallbackQuery(data="bek"))
 async def _(e):
+    if not await _require_owner_callback(e):
+        return
     await e.edit(
         "** <                ADMIN PANEL                 > **",
         buttons=admin.admin_panel(),
