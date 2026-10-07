@@ -1,6 +1,7 @@
 .git
 .gitignore
 .env
+.state/
 .env.*
 *.env
 *.env.*

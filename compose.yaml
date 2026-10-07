@@ -10,3 +10,8 @@ services:
     stop_grace_period: 30s
     env_file:
       - .env
+    volumes:
+      - session-state:/usr/src/app/.state
+
+volumes:
+  session-state:

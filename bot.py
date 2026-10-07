@@ -35,7 +35,7 @@ from core.executors import Executors
 from database import DataBase
 from functions.info import AnimeInfo
 from functions.schedule import ScheduleTasks, Var
-from functions.session_store import SessionStoreError, validate_key
+from functions.session_store import SessionStoreError, get_session_key
 from functions.tools import Tools, asyncio
 from functions.utils import AdminUtils
 from libs.ariawarp import Torrent
@@ -334,10 +334,12 @@ async def _owner_login(event):
             pass
 
     try:
-        validate_key(Var.SESSION_ENCRYPTION_KEY)
+        Var.SESSION_ENCRYPTION_KEY = get_session_key(
+            Var.SESSION_ENCRYPTION_KEY, create=True
+        )
     except SessionStoreError:
         return await event.reply(
-            "Login is not configured. Set SESSION_ENCRYPTION_KEY in the bot environment first."
+            "Session storage is not ready. Ensure the persistent Docker .state volume is mounted and writable, or set SESSION_ENCRYPTION_KEY."
         )
 
     await _delete_login_input(event.message)
