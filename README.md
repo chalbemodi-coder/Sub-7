@@ -1,12 +1,12 @@
-[![Stars](https://img.shields.io/github/stars/kaif-00z/AutoAnimeBot?style=flat-square&color=yellow)](https://github.com/kaif-00z/AutoAnimeBot/stargazers)
-[![Forks](https://img.shields.io/github/forks/kaif-00z/AutoAnimeBot?style=flat-square&color=orange)](https://github.com/kaif-00z/AutoAnimeBotfork)
+[![Stars](https://img.shields.io/github/stars/chalbemodi-coder/Sub-7?style=flat-square&color=yellow)](https://github.com/chalbemodi-coder/Sub-7/stargazers)
+[![Forks](https://img.shields.io/github/forks/chalbemodi-coder/Sub-7?style=flat-square&color=orange)](https://github.com/chalbemodi-coder/Sub-7/forks)
 [![Python](https://img.shields.io/badge/Python-v3.12.3-blue)](https://www.python.org/)
-[![CodeFactor](https://www.codefactor.io/repository/github/kaif-00z/autoanimebot/badge)](https://www.codefactor.io/repository/github/kaif-00z/autoanimebot)
-[![Maintenance](https://img.shields.io/badge/Maintained%3F-yes-green.svg)](https://github.com/kaif-00z/AutoAnimeBot/graphs/commit-activity)
-[![Contributors](https://img.shields.io/github/contributors/kaif-00z/AutoAnimeBot?style=flat-square&color=green)](https://github.com/kaif-00z/AutoAnimeBot/graphs/contributors)
+[![CodeFactor](https://www.codefactor.io/repository/github/chalbemodi-coder/sub-7/badge)](https://www.codefactor.io/repository/github/chalbemodi-coder/sub-7)
+[![Maintenance](https://img.shields.io/badge/Maintained%3F-yes-green.svg)](https://github.com/chalbemodi-coder/Sub-7/graphs/commit-activity)
+[![Contributors](https://img.shields.io/github/contributors/chalbemodi-coder/Sub-7?style=flat-square&color=green)](https://github.com/chalbemodi-coder/Sub-7/graphs/contributors)
 [![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg?style=flat-square)](https://makeapullrequest.com)
-[![License](https://img.shields.io/badge/license-GPLv3-blue)](https://github.com/kaif-00z/AutoAnimeBot/blob/main/LICENSE)   
-[![Sparkline](https://stars.medv.io/kaif-00z/AutoAnimeBot.svg)](https://stars.medv.io/kaif-00z/AutoAnimeBot)
+[![License](https://img.shields.io/badge/license-GPLv3-blue)](https://github.com/chalbemodi-coder/Sub-7/blob/main/LICENSE)
+[![Sparkline](https://stars.medv.io/chalbemodi-coder/Sub-7.svg)](https://github.com/chalbemodi-coder/Sub-7)
 
 ## Developer Note
 
@@ -100,9 +100,9 @@
 
 ## Deployment In VPS
 
-- `git clone https://github.com/kaif-00z/AutoAnimeBot.git`
+- `git clone https://github.com/chalbemodi-coder/Sub-7.git`
 
-- `nano .env` configure env as per [this](https://github.com/kaif-00z/AutoAnimeBot/blob/main/.sample.env) or  using [this](https://github.com/kaif-00z/AutoAnimeBot/blob/main/auto_env_gen.py).
+- `nano .env` configure env as per [this](https://github.com/chalbemodi-coder/Sub-7/blob/main/.sample.env) or  using [this](https://github.com/chalbemodi-coder/Sub-7/blob/main/auto_env_gen.py).
 
 - `sudo docker build . -t ongoing` (make sure to install docker first using `sudo apt install docker.io`)
 
@@ -110,7 +110,7 @@
 
 ## Commands
 
-[![Comand](https://files.catbox.moe/utcf3f.jpg)](https://github.com/kaif-00z/AutoAnimeBot/)
+[![Comand](https://files.catbox.moe/utcf3f.jpg)](https://github.com/chalbemodi-coder/Sub-7/)
 
 **Uploading of Ongoing Animes Is Automatic**
 
@@ -120,4 +120,4 @@
 
 ## Donate
 
-- [Contact me on Telegram](t.me/kaif_00z) if you would like to donate me for my work!
+- [Contact @ahjin_anime on Telegram](https://t.me/ahjin_anime) for support or donations.

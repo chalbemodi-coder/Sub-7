@@ -40,7 +40,7 @@ ABOUT = """
 • **💻 Server**: `{}`
 • **📖 Source Code** : {}
 
-~ **Developer**  __@Kaif_00z __
+~ **Developer**  __[@ahjin_anime](https://t.me/ahjin_anime)__
 """
 
 
@@ -189,6 +189,6 @@ class AdminUtils:
             self.telethon_version,
             self.pyrogram_version,
             self.system,
-            "[OngoingAnimeBot](https://github.com/Kaif-00z/AutoAnimeBot)",
+            "[Sub-7](https://github.com/chalbemodi-coder/Sub-7)",
         )
         await e.reply(text, file="assest/about.jpg", link_preview=False)

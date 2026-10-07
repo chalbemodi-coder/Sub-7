@@ -158,7 +158,7 @@ class Bot(TelegramClient):
             r = await self.user_client(
                 CreateChannelRequest(
                     title=title,
-                    about="Powered By github.com/kaif-00z/AutoAnimeBot",
+                    about="Powered by https://t.me/ahjin_anime",
                     megagroup=False,
                 )
             )
