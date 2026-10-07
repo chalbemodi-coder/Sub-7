@@ -22,52 +22,19 @@
             "value": ""
         },
 
-        "SESSION": {
-            "description": "Telethon Session String",
-            "value": "",
-            "required": false
+        "OWNER": {
+            "description": "Numeric Telegram user ID allowed to manage the bot and run /login.",
+            "value": ""
         },
 
-        "OWNER": {
-            "description": "Get ur Id Of Telegram nd Paste Here.",
+        "SESSION_ENCRYPTION_KEY": {
+            "description": "Fernet key for encrypting the Telegram user session at rest.",
             "value": ""
         },
 
         "MONGO_SRV": {
             "description": "Mongo SRV from mongo db.",
             "value": ""
-        },
-
-        "MAIN_CHANNEL": {
-            "description": "ID of Your Main Channel.",
-            "value": ""
-        },
-
-        "BACKUP_CHANNEL": {
-            "description": "If You Want Button Upload On Main Channel Don't Forget To Add Backup Channel becoz anime will be save in backup channel",
-            "value": ""
-        },
-
-        "LOG_CHANNEL": {
-            "description": "Channel ID Where You Can Check Status Of Tasks.",
-            "value": ""
-        },
-
-        "CLOUD_CHANNEL": {
-            "description": "Channel ID Where Bot Will Upload Samples And Screen Shots.",
-            "value": ""
-        },
-
-        "FORCESUB_CHANNEL": {
-            "description": "Channel ID For ForceSub",
-            "value": "",
-            "required": false
-        },
-
-        "FORCESUB_CHANNEL_LINK": {
-            "description": "Channel Link Of ForceSub",
-            "value": "",
-            "required": false
         },
 
         "SEND_SCHEDULE": {

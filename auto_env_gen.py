@@ -2,10 +2,12 @@
 # Credits Ultroid Devs & kaif-00z
 
 import asyncio
+import os
 import random
 import sys
 from traceback import format_exc
 
+from cryptography.fernet import Fernet
 from telethon import TelegramClient
 from telethon.sessions import StringSession
 from telethon.tl.functions.channels import CreateChannelRequest
@@ -16,11 +18,8 @@ ENV = """
 API_ID={}
 API_HASH={}
 BOT_TOKEN={}
-SESSION={}
-MAIN_CHANNEL={}
-LOG_CHANNEL={}
-CLOUD_CHANNEL={}
-BACKUP_CHANNEL={}
+SESSION=
+SESSION_ENCRYPTION_KEY={}
 MONGO_SRV={}
 OWNER={}
 """
@@ -33,7 +32,6 @@ async def generate_session_string():
         async with TelegramClient(StringSession(), api_id, api_hash) as client:
             DATA["api_id"] = api_id
             DATA["api_hash"] = api_hash
-            DATA["session"] = str(client.session.save())
             return (str(client.session.save()), api_id, api_hash)
     print("API_ID and HASH Not Found!")
     sys.exit(1)
@@ -62,6 +60,20 @@ def get_forcesub():
     return False
 
 
+def get_or_create_session_key():
+    try:
+        with open(".env", "r") as env_file:
+            for line in env_file:
+                if line.startswith("SESSION_ENCRYPTION_KEY="):
+                    key = line.partition("=")[2].strip()
+                    if key:
+                        Fernet(key.encode("ascii"))
+                        return key
+    except (OSError, UnicodeEncodeError, ValueError):
+        pass
+    return Fernet.generate_key().decode("ascii")
+
+
 async def create_channel(client, title):
     try:
         r = await client(
@@ -84,26 +96,28 @@ def generate_env():
         DATA["api_id"],
         DATA["api_hash"],
         DATA["bot_token"],
-        DATA["session"],
-        DATA["Ongoing Anime 2026"],
-        DATA["Ongoing Anime Logs"],
-        DATA["Ongoing Anime Samples And SS"],
-        DATA["Ongoing Anime Backup"],
+        get_or_create_session_key(),
         DATA["mongo_srv"],
         DATA["owner_id"],
     )
-    if DATA.get("fsub_id") and DATA.get("fsub_id"):
-        txt += f"\nFORCESUB_CHANNEL={
-            DATA['fsub_id']}\nFORCESUB_CHANNEL_LINK={
-            DATA['fsub_link']}"
-    with open(".env", "w") as f:
+    fd = os.open(".env", os.O_WRONLY | os.O_CREAT | os.O_TRUNC, 0o600)
+    with os.fdopen(fd, "w") as f:
         f.write(txt.strip())
-    print("Succesfully Generated .env File Don't Forget To Save It! For Future Uses.")
+    os.chmod(".env", 0o600)
+    print(
+        "Generated .env with a private encryption key; Telegram user SESSION was not saved. "
+        "Channel IDs are not stored as env vars. After starting the bot, use /login and these commands:"
+    )
+    print(f"/setchannel main {DATA['Ongoing Anime 2026']}")
+    print(f"/setchannel log {DATA['Ongoing Anime Logs']}")
+    print(f"/setchannel cloud {DATA['Ongoing Anime Samples And SS']}")
+    print(f"/setchannel backup {DATA['Ongoing Anime Backup']}")
+    if DATA.get("fsub_id") and DATA.get("fsub_link"):
+        print(f"/setchannel forcesub {DATA['fsub_id']} {DATA['fsub_link']}")
 
 
 async def auto_maker():
     string_session, api_id, api_hash = await generate_session_string()
-    print(string_session)
     async with TelegramClient(
         StringSession(string_session), api_id, api_hash
     ) as client:

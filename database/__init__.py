@@ -22,10 +22,14 @@ from traceback import format_exc
 from motor.motor_asyncio import AsyncIOMotorClient
 
 from functions.config import Var
+from functions.session_store import decrypt_session, encrypt_session
 from libs.logger import LOGS
 
 
 class DataBase:
+    CHANNEL_SETTINGS_ID = "CHANNEL_SETTINGS"
+    USER_SESSION_ID = "ENCRYPTED_TELEGRAM_USER_SESSION"
+
     def __init__(self):
         try:
             LOGS.info("Trying To Connect With MongoDB")
@@ -40,6 +44,113 @@ class DataBase:
             LOGS.exception(format_exc())
             LOGS.critical(str(error))
             sys.exit(1)
+
+    def _apply_channel_settings(self, settings):
+        main_channels = list(dict.fromkeys(settings.get("main_channels", [])))[:2]
+        Var.MAIN_CHANNELS = main_channels
+        Var.MAIN_CHANNEL = main_channels[0] if main_channels else 0
+        Var.LOG_CHANNEL = settings.get("log_channel", 0)
+        Var.BACKUP_CHANNEL = settings.get("backup_channel", 0)
+        Var.CLOUD_CHANNEL = settings.get("cloud_channel", 0)
+        Var.FORCESUB_CHANNEL = settings.get("force_sub_channel", 0)
+        Var.FORCESUB_CHANNEL_LINK = settings.get("force_sub_link", "")
+
+    def _legacy_channel_settings(self):
+        main_channels = list(getattr(Var, "MAIN_CHANNELS", []) or [])
+        if not main_channels and Var.MAIN_CHANNEL:
+            main_channels = [Var.MAIN_CHANNEL]
+        return {
+            "main_channels": main_channels[:2],
+            "log_channel": Var.LOG_CHANNEL or 0,
+            "backup_channel": Var.BACKUP_CHANNEL or 0,
+            "cloud_channel": Var.CLOUD_CHANNEL or 0,
+            "force_sub_channel": Var.FORCESUB_CHANNEL or 0,
+            "force_sub_link": Var.FORCESUB_CHANNEL_LINK or "",
+        }
+
+    async def get_channel_settings(self):
+        data = await self.opts_db.find_one({"_id": self.CHANNEL_SETTINGS_ID})
+        if not data:
+            data = self._legacy_channel_settings()
+            await self.opts_db.update_one(
+                {"_id": self.CHANNEL_SETTINGS_ID},
+                {"$set": data},
+                upsert=True,
+            )
+        settings = {
+            "main_channels": [
+                int(channel)
+                for channel in (data.get("main_channels") or [])
+                if int(channel) != 0
+            ][:2],
+            "log_channel": int(data.get("log_channel") or 0),
+            "backup_channel": int(data.get("backup_channel") or 0),
+            "cloud_channel": int(data.get("cloud_channel") or 0),
+            "force_sub_channel": int(data.get("force_sub_channel") or 0),
+            "force_sub_link": str(data.get("force_sub_link") or ""),
+        }
+        self._apply_channel_settings(settings)
+        return settings
+
+    async def _save_channel_settings(self, settings):
+        await self.opts_db.update_one(
+            {"_id": self.CHANNEL_SETTINGS_ID},
+            {"$set": settings},
+            upsert=True,
+        )
+        self._apply_channel_settings(settings)
+
+    async def load_user_session(self):
+        data = await self.opts_db.find_one({"_id": self.USER_SESSION_ID})
+        if not data or not data.get("token"):
+            return None
+        return decrypt_session(data["token"], Var.SESSION_ENCRYPTION_KEY)
+
+    async def store_user_session(self, session_string):
+        token = encrypt_session(session_string, Var.SESSION_ENCRYPTION_KEY)
+        await self.opts_db.update_one(
+            {"_id": self.USER_SESSION_ID},
+            {"$set": {"token": token}},
+            upsert=True,
+        )
+
+    async def set_channel(self, role, channel_id, invite_link=""):
+        settings = await self.get_channel_settings()
+        if role == "main":
+            channels = settings["main_channels"]
+            if channel_id not in channels:
+                if len(channels) >= 2:
+                    raise ValueError("At most two main channels can be configured.")
+                channels.append(channel_id)
+            settings["main_channels"] = channels
+        elif role in {"log", "backup", "cloud"}:
+            settings[f"{role}_channel"] = channel_id
+        elif role == "forcesub":
+            settings["force_sub_channel"] = channel_id
+            settings["force_sub_link"] = invite_link
+        else:
+            raise ValueError("Unknown channel role.")
+        await self._save_channel_settings(settings)
+        return settings
+
+    async def unset_channel(self, role, channel_id=None):
+        settings = await self.get_channel_settings()
+        if role == "main":
+            if channel_id is None:
+                settings["main_channels"] = []
+            else:
+                settings["main_channels"] = [
+                    item for item in settings["main_channels"] if item != channel_id
+                ]
+        elif role in {"log", "backup", "cloud"}:
+            settings[f"{role}_channel"] = 0
+        elif role == "forcesub":
+            settings["force_sub_channel"] = 0
+            settings["force_sub_link"] = ""
+        else:
+            raise ValueError("Unknown channel role.")
+        await self._save_channel_settings(settings)
+        return settings
 
     async def add_anime(self, uid):
         data = await self.file_info_db.find_one({"_id": uid})

@@ -64,25 +64,17 @@
 
 - `BOT_TOKEN` - Get This From @Botfather In Telegram.
 
+- `API_ID` and `API_HASH` - Get these from [my.telegram.org](https://my.telegram.org); required for user-session login.
+
 - `MONGO_SRV` - Get This From mongodb.com .
 
-- `MAIN_CHANNEL` - ID of Channel Where Anime Will Upload.
+- `OWNER` - Numeric Telegram user ID allowed to manage channels and use `/login`.
 
-- `CLOUD_CHANNEL` - ID of Channel Where Samples And Screenshots Of Anime Will Be Uploaded.
-
-- `LOG_CHANNEL` - ID of Channel Where Status Of Proccesses Will Be Shown.
-
-- `OWNER` - ID of Owner.
+- `SESSION_ENCRYPTION_KEY` - Secret Fernet key used to encrypt the saved user session in MongoDB.
 
 ### OPTIONAL VARIABLES
 
-- `SESSION` - Telethon Session String Of Your Telegram Account.
-
-- `BACKUP_CHANNEL` - ID of Channel Where Anime Will Be Saved As BackUP if You Are Using Button Upload Option Then Make Sure To SET Backup Channel.
-
-- `FORCESUB_CHANNEL` - ID of Channel Where You Want The User To Join (Make Sure You Promoted The Bot in that channel).
-
-- `FORCESUB_CHANNEL_LINK` - Link of Channel Via User Join The `FORCESUB_CHANNEL`.
+- `SESSION` - Legacy plaintext Telethon session; leave blank to use encrypted `/login` storage.
 
 - `THUMBNAIL` - JPG/PNG Link of Thumbnail FIle.
 
@@ -97,6 +89,23 @@
 - `DELETE_FILES_FROM_PMS` - `True/False` It Will delete the file from pm of user after 10mins if button upload is enabled. default is `True`.
 
 - `CRF` - Less CRF == High Quality, More Size , More CRF == Low Quality, Less Size, CRF Range = 20-51.
+
+### Owner-only Telegram User Login
+
+- Set `OWNER` to your own numeric Telegram user ID. The sample value `0` disables owner-only login until you replace it.
+- Generate a Fernet key with `python -c "from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())"` and store it as the secret environment variable `SESSION_ENCRYPTION_KEY`. Never commit or share this key.
+- Leave `SESSION` empty. Start the bot, then send `/login` to it from the owner's private chat. Only the exact `OWNER` ID is allowed; up to five incorrect OTP attempts are accepted before the flow stops and the owner must restart it.
+- `auto_env_gen.py` may still use a temporary local login once to create the BotFather bot/channels, but it no longer prints or stores that session. Normal runtime user-session login is through `/login`.
+- The session is encrypted before it is stored in MongoDB, so it survives normal redeploys. Preserve the same encryption key and protect both the key and database backups; without that key the stored session cannot be decrypted.
+- Login codes (and, if requested by Telegram, the 2-Step Verification password) are entered in the bot's private chat and deleted on a best-effort basis. **Bot chats are not end-to-end encrypted**, so Telegram may process or retain messages; do not use this flow if that exposure is unacceptable. Secrets are not written to application logs.
+
+### Owner-only Channel Setup
+
+- Channel IDs are stored in MongoDB; you do not need `MAIN_CHANNEL`, `LOG_CHANNEL`, `BACKUP_CHANNEL`, `CLOUD_CHANNEL`, or force-sub channel environment variables.
+- After startup, send `/channels` to see current settings, then `/setchannel main <channel_id>`, `/setchannel log <channel_id>`, `/setchannel backup <channel_id>`, or `/setchannel cloud <channel_id>` in the owner's private chat. The bot must be an administrator with the required posting rights in each channel.
+- Add at most two main channels; anime posts, posters, and daily schedules are mirrored to both. Other roles take one channel each. Remove a main channel with `/unsetchannel main <channel_id>` (or clear both with `/unsetchannel main`); remove another role with `/unsetchannel log|backup|cloud|forcesub`.
+- Force-sub also needs an invite link: `/setchannel forcesub <channel_id> <invite_link>`.
+- Public anime posts are not automatically deleted. A single temporary progress message is updated in place and removed when processing finishes; error logs remain.
 
 ## Deployment In VPS
 
