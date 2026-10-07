@@ -110,13 +110,18 @@
 
 ## Deployment In VPS
 
-- After PR #2 is merged, deploy `main` from `https://github.com/chalbemodi-coder/Sub-7.git`. For pre-merge testing only, use branch `security/owner-only-telegram-login`.
+- Deploy the repository as an always-on Docker worker. PR #2 is merged; while PR #3's Pyrofork security fix is pending, use branch `security/pyrofork-cve-fix`. After PR #3 is merged, deploy `main`.
 
-- Configure the environment variables from `.sample.env` in the hosting provider's secret/environment-variable settings. For a VPS, store them in a private `.env` file; do not commit or send that file in chat. `.dockerignore` excludes `.env` and session files from the image build context.
+- Copy `.sample.env` to `.env`, fill the required secrets, and restrict file access (`chmod 600 .env`). Never commit or send `.env`; `.dockerignore` excludes it and session files from the image build context. Managed hosting should receive these values through its secret/environment-variable settings.
 
-- Build the image with `sudo docker build . -t ongoing` (make sure to install Docker first using `sudo apt install docker.io`).
+- Docker Compose is included. Install Docker Engine and the Compose plugin, then run from the repository root:
 
-- Run on a VPS with `sudo docker run -d --name ongoing --restart unless-stopped --env-file .env ongoing`. On managed hosting, set the same variables in its dashboard; the Dockerfile entrypoint runs `bash run.sh` (`python3 bot.py`).
+```bash
+docker compose up -d --build
+docker compose logs -f bot
+```
+
+- To update after pulling the latest branch: `docker compose up -d --build`. To stop the container: `docker compose down`. The container restarts automatically unless stopped; no inbound port mapping is needed. The Dockerfile runs `bash run.sh` (`python3 bot.py`), and channel/session settings persist in MongoDB.
 
 ## Commands
 
