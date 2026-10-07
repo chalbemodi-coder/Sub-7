@@ -1,0 +1,15 @@
+.git
+.gitignore
+.env
+.env.*
+*.env
+*.env.*
+!.sample.env
+*.session
+*.session-journal
+AutoAnimeBot.log
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+node_modules/

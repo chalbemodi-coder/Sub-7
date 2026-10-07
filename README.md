@@ -110,13 +110,13 @@
 
 ## Deployment In VPS
 
-- `git clone https://github.com/chalbemodi-coder/Sub-7.git`
+- After PR #2 is merged, deploy `main` from `https://github.com/chalbemodi-coder/Sub-7.git`. For pre-merge testing only, use branch `security/owner-only-telegram-login`.
 
-- `nano .env` configure env as per [this](https://github.com/chalbemodi-coder/Sub-7/blob/main/.sample.env) or  using [this](https://github.com/chalbemodi-coder/Sub-7/blob/main/auto_env_gen.py).
+- Configure the environment variables from `.sample.env` in the hosting provider's secret/environment-variable settings. For a VPS, store them in a private `.env` file; do not commit or send that file in chat. `.dockerignore` excludes `.env` and session files from the image build context.
 
-- `sudo docker build . -t ongoing` (make sure to install docker first using `sudo apt install docker.io`)
+- Build the image with `sudo docker build . -t ongoing` (make sure to install Docker first using `sudo apt install docker.io`).
 
-- `sudo docker run ongoing`
+- Run on a VPS with `sudo docker run -d --name ongoing --restart unless-stopped --env-file .env ongoing`. On managed hosting, set the same variables in its dashboard; the Dockerfile entrypoint runs `bash run.sh` (`python3 bot.py`).
 
 ## Commands
 
