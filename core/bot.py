@@ -19,6 +19,7 @@
 
 import asyncio
 import sys
+from datetime import datetime, timedelta, timezone
 from logging import Logger
 from traceback import format_exc
 
@@ -283,6 +284,16 @@ class Bot(TelegramClient):
             return data.link
         except BaseException:
             LOGS.error(format_exc())
+
+    async def generate_temporary_invite_link(self, channel_id, minutes=10):
+        """Create a unique one-use invite link through Telegram's Bot API."""
+        expires_at = datetime.now(timezone.utc) + timedelta(minutes=minutes)
+        result = await self.pyro_client.create_chat_invite_link(
+            chat_id=channel_id,
+            expire_date=expires_at,
+            member_limit=1,
+        )
+        return result.invite_link, expires_at.timestamp()
 
     async def delete_after(self, messages, seconds: int = 600):  # 10 min
         await asyncio.sleep(seconds)

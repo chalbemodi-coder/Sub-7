@@ -103,8 +103,10 @@
 
 - Channel IDs are stored in MongoDB; you do not need `MAIN_CHANNEL`, `LOG_CHANNEL`, `BACKUP_CHANNEL`, `CLOUD_CHANNEL`, or force-sub channel environment variables.
 - After startup, send `/channels` to see current settings, then `/setchannel main <channel_id>`, `/setchannel log <channel_id>`, `/setchannel backup <channel_id>`, or `/setchannel cloud <channel_id>` in the owner's private chat. The bot must be an administrator with the required posting rights in each channel.
-- Add at most two main channels; anime posts, posters, and daily schedules are mirrored to both. Other roles take one channel each. Remove a main channel with `/unsetchannel main <channel_id>` (or clear both with `/unsetchannel main`); remove another role with `/unsetchannel log|backup|cloud|forcesub`.
-- Force-sub also needs an invite link: `/setchannel forcesub <channel_id> <invite_link>`.
+- Add at most two main channels; anime posts, posters, and daily schedules are mirrored to both. Other roles take one channel each. Remove a main channel with `/unsetchannel main <channel_id>` (or clear both with `/unsetchannel main`); remove another role with `/unsetchannel log|backup|cloud`.
+- Add up to six force-sub channels, choosing a mode separately for each one: `/setchannel forcesub <channel_id> temp` gives each user a **unique, single-use invite link that expires in 10 minutes**; refresh reuses that user's still-valid link. `/setchannel forcesub <channel_id> fixed <invite_link>` uses the invite link you provide. Repeating `/setchannel` for the same ID changes that channel's mode.
+- Temporary links require the bot to be an administrator with permission to invite users in each selected channel. Remove one with `/unsetchannel forcesub <channel_id>` or remove all force-sub channels with `/unsetchannel forcesub`.
+- Switching a channel from fixed to temporary mode does not revoke the old fixed invite link; revoke that old link in Telegram if it should no longer work.
 - Public anime posts are not automatically deleted. A single temporary progress message is updated in place and removed when processing finishes; error logs remain.
 
 ## Deployment In VPS

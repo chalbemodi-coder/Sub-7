@@ -113,7 +113,9 @@ def generate_env():
     print(f"/setchannel cloud {DATA['Ongoing Anime Samples And SS']}")
     print(f"/setchannel backup {DATA['Ongoing Anime Backup']}")
     if DATA.get("fsub_id") and DATA.get("fsub_link"):
-        print(f"/setchannel forcesub {DATA['fsub_id']} {DATA['fsub_link']}")
+        print(
+            f"/setchannel forcesub {DATA['fsub_id']} fixed {DATA['fsub_link']}"
+        )
 
 
 async def auto_maker():

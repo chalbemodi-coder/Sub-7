@@ -44,6 +44,7 @@ class Var:
     LOG_CHANNEL = config("LOG_CHANNEL", default=0, cast=int)
     CLOUD_CHANNEL = config("CLOUD_CHANNEL", default=0, cast=int)
     FORCESUB_CHANNEL = config("FORCESUB_CHANNEL", default=0, cast=int)
+    FORCESUB_CHANNELS = []
     OWNER = config("OWNER", default=0, cast=int)
 
     # Other Configs
